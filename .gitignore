@@ -29,7 +29,7 @@ frontend/.env.*
 !frontend/.env.example
 
 # Docker
-.dockerignore
+# (intentionally not ignoring .dockerignore — it must be committed)
 
 # IDE
 .vscode/settings.json
