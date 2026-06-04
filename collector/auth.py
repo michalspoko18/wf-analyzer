@@ -13,7 +13,7 @@ class WellFitnessAuth:
         self._login = login
         self._password = password
         self._client: Optional[httpx.AsyncClient] = None
-        self._token: Optional[str] = None
+        self._authenticated: bool = False
 
     async def authenticate(self) -> None:
         if self._client is None:
@@ -21,6 +21,7 @@ class WellFitnessAuth:
                 base_url=BASE_URL,
                 timeout=30.0,
                 headers={"Content-Type": "application/json"},
+                follow_redirects=True,
             )
 
         payload = {"Login": self._login, "Password": self._password}
@@ -28,24 +29,34 @@ class WellFitnessAuth:
         response.raise_for_status()
 
         data = response.json()
-        user = data.get("User") or {}
-        self._token = (
-            data.get("token")
-            or data.get("Token")
-            or data.get("access_token")
-            or data.get("AccessToken")
-            or user.get("token")
-            or user.get("Token")
-            or user.get("access_token")
-            or user.get("AccessToken")
-            or user.get("AuthToken")
-            or user.get("authToken")
-        )
-        if not self._token:
-            raise ValueError(f"No JWT token found in login response: {data}")
+        user = data.get("User")
+        if not user:
+            raise ValueError(f"Login failed, unexpected response: {data}")
 
-        self._client.headers.update({"Authorization": f"Bearer {self._token}"})
-        logger.info("Authenticated with WellFitness")
+        self._authenticated = True
+        logger.info(
+            "Authenticated as %s %s (cookies: %d)",
+            user.get("Member", {}).get("FirstName", "?"),
+            user.get("Member", {}).get("LastName", "?"),
+            len(self._client.cookies),
+        )
+
+    async def get_client(self) -> httpx.AsyncClient:
+        if self._client is None or not self._authenticated:
+            await self.authenticate()
+        assert self._client is not None
+        return self._client
+
+    async def invalidate(self) -> None:
+        """Force re-authentication on next get_client() call."""
+        self._authenticated = False
+
+    async def close(self) -> None:
+        if self._client:
+            await self._client.aclose()
+            self._client = None
+            self._authenticated = False
+
 
     async def get_client(self) -> httpx.AsyncClient:
         if self._client is None or self._token is None:

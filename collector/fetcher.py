@@ -26,6 +26,7 @@ async def fetch_occupancy(auth: WellFitnessAuth) -> list[dict]:
 
         if response.status_code == 401 and attempt == 0:
             logger.warning("Got 401, re-authenticating…")
+            await auth.invalidate()
             await auth.authenticate()
             continue
 
