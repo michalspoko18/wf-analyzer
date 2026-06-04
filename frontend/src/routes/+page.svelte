@@ -14,7 +14,10 @@
 	onMount(async () => {
 		try {
 			gyms = await api.getGyms();
-			if (gyms.length > 0) selectedGymId = gyms[0].id;
+			if (gyms.length > 0) {
+				const sloneczne = gyms.find((g) => g.name.includes('Słoneczne'));
+				selectedGymId = sloneczne?.id ?? gyms[0].id;
+			}
 		} catch {
 			error = 'Nie można pobrać listy siłowni.';
 		}
@@ -65,13 +68,15 @@
 					>
 				</div>
 
-				{#if selectedGymId}
-					{#if activeTab === 'chart'}
-						<HistoryChart gymId={selectedGymId} />
-					{:else}
-						<Heatmap gymId={selectedGymId} />
+				{#key selectedGymId}
+					{#if selectedGymId}
+						{#if activeTab === 'chart'}
+							<HistoryChart gymId={selectedGymId} />
+						{:else}
+							<Heatmap gymId={selectedGymId} />
+						{/if}
 					{/if}
-				{/if}
+				{/key}
 			</section>
 		{/if}
 

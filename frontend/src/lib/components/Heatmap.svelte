@@ -32,7 +32,7 @@
 		return `hsl(${h}, 70%, 35%)`;
 	}
 
-	onMount(load);
+	$: gymId, load();
 </script>
 
 <div class="wrapper">

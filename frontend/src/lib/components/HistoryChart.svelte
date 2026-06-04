@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { onDestroy, onMount } from 'svelte';
+	import { onDestroy } from 'svelte';
 	import { Chart, type ChartData } from 'chart.js/auto';
 	import { api, type HourlyData } from '$lib/api';
 
@@ -87,7 +87,7 @@
 	$: if (rows.length > 0) buildChart();
 	$: selectedDow, rows.length > 0 && buildChart();
 
-	onMount(load);
+	$: gymId, load();
 	onDestroy(() => chart?.destroy());
 </script>
 
