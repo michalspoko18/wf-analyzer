@@ -1,0 +1,40 @@
+:root {
+	--color-bg: #0f1117;
+	--color-surface: #1a1d27;
+	--color-border: #2a2d3a;
+	--color-text: #e2e8f0;
+	--color-text-muted: #94a3b8;
+	--color-accent: #6366f1;
+	--color-accent-light: #818cf8;
+	--color-success: #22c55e;
+	--color-warning: #f59e0b;
+	--color-danger: #ef4444;
+	--radius: 12px;
+	--font: 'Inter', system-ui, sans-serif;
+}
+
+*,
+*::before,
+*::after {
+	box-sizing: border-box;
+	margin: 0;
+	padding: 0;
+}
+
+body {
+	background: var(--color-bg);
+	color: var(--color-text);
+	font-family: var(--font);
+	line-height: 1.6;
+	min-height: 100vh;
+}
+
+h1, h2, h3 {
+	font-weight: 600;
+	letter-spacing: -0.02em;
+}
+
+a {
+	color: var(--color-accent-light);
+	text-decoration: none;
+}
