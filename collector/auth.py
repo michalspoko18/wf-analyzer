@@ -57,15 +57,3 @@ class WellFitnessAuth:
             self._client = None
             self._authenticated = False
 
-
-    async def get_client(self) -> httpx.AsyncClient:
-        if self._client is None or self._token is None:
-            await self.authenticate()
-        assert self._client is not None
-        return self._client
-
-    async def close(self) -> None:
-        if self._client:
-            await self._client.aclose()
-            self._client = None
-            self._token = None
