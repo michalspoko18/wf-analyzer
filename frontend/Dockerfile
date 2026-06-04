@@ -8,9 +8,6 @@ RUN npm ci
 
 COPY frontend/ .
 
-ARG API_URL=http://localhost:8000
-ENV VITE_API_URL=$API_URL
-
 RUN npm run build
 
 # Stage 2: runtime

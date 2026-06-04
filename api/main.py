@@ -4,6 +4,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from api.database import close_pool, create_pool
+from api.middleware import ApiKeyMiddleware
 from api.routers import analytics, gyms, occupancy
 
 
@@ -16,6 +17,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="WF Analyzer API", version="1.0.0", lifespan=lifespan)
 
+app.add_middleware(ApiKeyMiddleware)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
