@@ -1,4 +1,13 @@
 services:
+  init-db:
+    image: postgres:16-alpine
+    env_file: .env
+    volumes:
+      - ./db/init.sql:/init.sql:ro
+    entrypoint: >
+      sh -c "psql \"$$DATABASE_URL\" -f /init.sql"
+    restart: "no"
+
   collector:
     build:
       context: .
@@ -6,6 +15,8 @@ services:
     env_file: .env
     restart: unless-stopped
     depends_on:
+      init-db:
+        condition: service_completed_successfully
       api:
         condition: service_healthy
 
@@ -17,6 +28,9 @@ services:
     ports:
       - "8000:8000"
     restart: unless-stopped
+    depends_on:
+      init-db:
+        condition: service_completed_successfully
     healthcheck:
       test: ["CMD-SHELL", "curl -sf http://localhost:8000/health || exit 1"]
       interval: 30s
@@ -36,3 +50,4 @@ services:
     depends_on:
       api:
         condition: service_healthy
+
