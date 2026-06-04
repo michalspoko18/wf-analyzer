@@ -28,14 +28,21 @@ class WellFitnessAuth:
         response.raise_for_status()
 
         data = response.json()
+        user = data.get("User") or {}
         self._token = (
             data.get("token")
             or data.get("Token")
             or data.get("access_token")
             or data.get("AccessToken")
+            or user.get("token")
+            or user.get("Token")
+            or user.get("access_token")
+            or user.get("AccessToken")
+            or user.get("AuthToken")
+            or user.get("authToken")
         )
         if not self._token:
-            raise ValueError(f"No JWT token found in login response: {list(data.keys())}")
+            raise ValueError(f"No JWT token found in login response: {data}")
 
         self._client.headers.update({"Authorization": f"Bearer {self._token}"})
         logger.info("Authenticated with WellFitness")
