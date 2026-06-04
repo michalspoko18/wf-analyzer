@@ -1,0 +1,94 @@
+chce zrobic aplikacje ktora bedzie sie logowac do systemu silowni i pobierac dane ile jest aktualnie ludzi
+
+login - https://wellfitness.perfectgym.pl/ClientPortal2/Auth/Login
+
+wykorzystuje cookie i jwt token w headers wiec pewnie trzeba przetrzymywac informacje zeby byc auth
+
+aktualna ilosc ludzi - https://wellfitness.perfectgym.pl/ClientPortal2/Clubs/Clubs/GetMembersInClubs
+
+to jest zwykly json w takiej strukturze 
+
+{
+    "UsersInClubList": [
+        {
+            "ClubName": "Bełchatów, Kościuszki",
+            "ClubAddress": "Kościuszki 12",
+            "UsersLimit": null,
+            "UsersCountCurrentlyInClub": 46
+        },
+        {
+            "ClubName": "Białystok PKS",
+            "ClubAddress": "Bohaterów Monte Cassino 10",
+            "UsersLimit": null,
+            "UsersCountCurrentlyInClub": 254
+        },
+        {
+            "ClubName": "Bielsko-Biała, Nowe Miasto",
+            "ClubAddress": "Legionów 26/28",
+            "UsersLimit": null,
+            "UsersCountCurrentlyInClub": 147
+        },
+        {
+            "ClubName": "Bolesławiec, Stary Dworzec",
+            "ClubAddress": "Hutnicza 7a",
+            "UsersLimit": null,
+            "UsersCountCurrentlyInClub": 54
+        }]}
+
+ale bierzemy pod uwage jedynie 3 
+        {
+            "ClubName": "Stargard, Zachód",
+            "ClubAddress": "Szczecińska 45",
+            "UsersLimit": null,
+            "UsersCountCurrentlyInClub": 67
+        },
+                {
+            "ClubName": "Szczecin, Hanza",
+            "ClubAddress": "Wyzwolenia 46",
+            "UsersLimit": null,
+            "UsersCountCurrentlyInClub": 163
+        },
+        {
+            "ClubName": "Szczecin, Słoneczne Centrum",
+            "ClubAddress": "Andrzeja Struga 18",
+            "UsersLimit": null,
+            "UsersCountCurrentlyInClub": 80
+        },
+
+chce pobierac dane co 5 min i zapisywac je w bazie danych wydaje mi sie ze postgresql bedzie tutaj dobrym rozwiazaniem 
+
+jakis system backup danych 
+
+mam osobna baze postgresql na serwerze 
+
+przygotuj backend moze ze skryptem zapisujacym dane albo osobno i frontend odpytujacy o najlepsze dni i godziny 
+
+struktura bazy moze byc cos kolo tego
+gyms
+  - id
+  - name
+  - address
+
+gym_occupancy_samples
+  - gym_id
+  - measured_at
+  - people_count
+
+gym_occupancy_hourly
+  - gym_id
+  - hour
+  - avg_people
+  - min_people
+  - max_people
+  - samples_count
+
+gym_occupancy_daily
+  - gym_id
+  - day
+  - avg_people
+  - min_people
+  - max_people
+  - peak_hour
+  - samples_count
+
+pisz w pythonie i svelte
