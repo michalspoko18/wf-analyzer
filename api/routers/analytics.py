@@ -23,22 +23,30 @@ async def best_times(
     """
     rows = await pool.fetch(
         """
-        SELECT
-            h.gym_id,
-            g.name  AS gym_name,
-            h.dow,
-            h.hour,
-            h.avg_people,
-            h.samples_count
-        FROM gym_occupancy_hourly h
-        JOIN gyms g ON g.id = h.gym_id
-        WHERE h.samples_count >= 2
-          AND h.dow        = ANY($1::int[])
-          AND h.hour      >= $2
-          AND h.hour      <= $3
-          AND h.avg_people < $4
-        ORDER BY h.gym_id, h.avg_people ASC
-        LIMIT $5
+        WITH ranked AS (
+            SELECT
+                h.gym_id,
+                g.name  AS gym_name,
+                h.dow,
+                h.hour,
+                h.avg_people,
+                h.samples_count,
+                ROW_NUMBER() OVER (
+                    PARTITION BY h.gym_id
+                    ORDER BY h.avg_people ASC
+                ) AS rn
+            FROM gym_occupancy_hourly h
+            JOIN gyms g ON g.id = h.gym_id
+            WHERE h.samples_count >= 2
+              AND h.dow        = ANY($1::int[])
+              AND h.hour      >= $2
+              AND h.hour      <= $3
+              AND h.avg_people < $4
+        )
+        SELECT gym_id, gym_name, dow, hour, avg_people, samples_count
+        FROM ranked
+        WHERE rn <= $5
+        ORDER BY gym_id, avg_people ASC
         """,
         dows,
         hour_from,
