@@ -20,6 +20,7 @@
 	let selectedDows = new Set([0, 1, 2, 3, 4, 5, 6]);
 	let hourFrom = 0;
 	let hourTo = 23;
+	let maxPeople = 80;
 
 	function toggleDow(d: number) {
 		if (selectedDows.has(d)) {
@@ -33,7 +34,11 @@
 	$: filteredData = data.map((gym) => ({
 		...gym,
 		best_times: gym.best_times.filter(
-			(s) => selectedDows.has(s.dow) && s.hour >= hourFrom && s.hour <= hourTo
+			(s) =>
+				selectedDows.has(s.dow) &&
+				s.hour >= hourFrom &&
+				s.hour <= hourTo &&
+				s.avg_people < maxPeople
 		)
 	}));
 
@@ -75,6 +80,15 @@
 							<option value={h}>{h}:00</option>
 						{/each}
 					</select>
+				</label>
+				<label class="max-people">
+					Maks. osób
+					<input
+						type="number"
+						bind:value={maxPeople}
+						min="1"
+						max="999"
+					/>
 				</label>
 			</div>
 		</div>
@@ -174,6 +188,20 @@
 	}
 
 	.hour-range select:focus {
+		outline: 1px solid var(--color-accent);
+	}
+
+	.max-people input {
+		background: var(--color-surface);
+		border: 1px solid var(--color-border);
+		border-radius: 6px;
+		color: var(--color-text-muted);
+		padding: 0.2rem 0.4rem;
+		font-size: 0.8rem;
+		width: 5rem;
+	}
+
+	.max-people input:focus {
 		outline: 1px solid var(--color-accent);
 	}
 
