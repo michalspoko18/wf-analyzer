@@ -8,6 +8,7 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 from collector.aggregator import aggregate_daily, aggregate_hourly
 from collector.auth import WellFitnessAuth
+from collector.classes import fetch_classes
 from collector.fetcher import fetch_occupancy
 from collector.weather import fetch_weather
 
@@ -87,6 +88,47 @@ async def collect_weather() -> None:
         logger.exception("Error during weather collection")
 
 
+async def collect_classes() -> None:
+    try:
+        classes = await fetch_classes(_auth)
+        if not classes:
+            logger.warning("No classes returned — skipping upsert")
+            return
+
+        async with _pool.acquire() as conn:
+            for cls in classes:
+                gym = await conn.fetchrow(
+                    "SELECT id FROM gyms WHERE name = $1", cls["gym_name"]
+                )
+                if not gym:
+                    logger.error("Unknown gym name: %s", cls["gym_name"])
+                    continue
+                await conn.execute(
+                    """
+                    INSERT INTO gym_classes
+                        (class_id, gym_id, name, trainer, start_time, end_time,
+                         status, capacity, spots_available, last_updated_at)
+                    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW())
+                    ON CONFLICT (class_id) DO UPDATE SET
+                        status          = EXCLUDED.status,
+                        spots_available = EXCLUDED.spots_available,
+                        last_updated_at = EXCLUDED.last_updated_at
+                    """,
+                    cls["class_id"],
+                    gym["id"],
+                    cls["name"],
+                    cls["trainer"],
+                    cls["start_time"],
+                    cls["end_time"],
+                    cls["status"],
+                    cls["capacity"],
+                    cls["spots_available"],
+                )
+        logger.info("Upserted %d classes", len(classes))
+    except Exception:
+        logger.exception("Error during classes collection")
+
+
 async def main() -> None:
     global _pool, _auth
 
@@ -98,13 +140,18 @@ async def main() -> None:
     scheduler.add_job(collect_sample, "interval", minutes=5, id="collect")
     scheduler.add_job(run_aggregation, "interval", hours=1, id="aggregate")
     scheduler.add_job(collect_weather, "interval", minutes=30, id="weather")
+    scheduler.add_job(collect_classes, "interval", hours=1, id="classes")
     scheduler.start()
 
-    logger.info("Scheduler started — sampling every 5 min, aggregating every hour, weather every 30 min")
+    logger.info(
+        "Scheduler started — sampling every 5 min, aggregating every hour, "
+        "weather every 30 min, classes every hour"
+    )
 
     # Collect immediately on startup
     await collect_sample()
     await collect_weather()
+    await collect_classes()
 
     try:
         await asyncio.Event().wait()
