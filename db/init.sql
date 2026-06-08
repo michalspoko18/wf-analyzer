@@ -39,6 +39,17 @@ CREATE TABLE IF NOT EXISTS gym_occupancy_daily (
     PRIMARY KEY (gym_id, dow)
 );
 
+CREATE TABLE IF NOT EXISTS weather_samples (
+    id           SERIAL PRIMARY KEY,
+    gym_id       INTEGER     NOT NULL REFERENCES gyms (id),
+    measured_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    temperature  FLOAT       NOT NULL,
+    rain         FLOAT       NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_weather_gym_time
+    ON weather_samples (gym_id, measured_at DESC);
+
 -- Seed: 3 monitored gyms
 INSERT INTO gyms (name, address)
 VALUES

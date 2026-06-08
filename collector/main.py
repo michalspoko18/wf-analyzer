@@ -9,6 +9,7 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from collector.aggregator import aggregate_daily, aggregate_hourly
 from collector.auth import WellFitnessAuth
 from collector.fetcher import fetch_occupancy
+from collector.weather import fetch_weather
 
 logging.basicConfig(
     level=logging.INFO,
@@ -59,6 +60,33 @@ async def run_aggregation() -> None:
         logger.exception("Error during aggregation")
 
 
+async def collect_weather() -> None:
+    try:
+        readings = await fetch_weather()
+        if not readings:
+            logger.warning("No weather readings returned — skipping insert")
+            return
+
+        async with _pool.acquire() as conn:
+            for reading in readings:
+                gym = await conn.fetchrow(
+                    "SELECT id FROM gyms WHERE name = $1", reading["gym_name"]
+                )
+                if not gym:
+                    logger.error("Unknown gym name: %s", reading["gym_name"])
+                    continue
+                await conn.execute(
+                    "INSERT INTO weather_samples (gym_id, measured_at, temperature, rain)"
+                    " VALUES ($1, NOW(), $2, $3)",
+                    gym["id"],
+                    reading["temperature"],
+                    reading["rain"],
+                )
+        logger.info("Stored %d weather readings", len(readings))
+    except Exception:
+        logger.exception("Error during weather collection")
+
+
 async def main() -> None:
     global _pool, _auth
 
@@ -69,12 +97,14 @@ async def main() -> None:
     scheduler = AsyncIOScheduler(timezone="Europe/Warsaw")
     scheduler.add_job(collect_sample, "interval", minutes=5, id="collect")
     scheduler.add_job(run_aggregation, "interval", hours=1, id="aggregate")
+    scheduler.add_job(collect_weather, "interval", minutes=30, id="weather")
     scheduler.start()
 
-    logger.info("Scheduler started — sampling every 5 min, aggregating every hour")
+    logger.info("Scheduler started — sampling every 5 min, aggregating every hour, weather every 30 min")
 
     # Collect immediately on startup
     await collect_sample()
+    await collect_weather()
 
     try:
         await asyncio.Event().wait()
