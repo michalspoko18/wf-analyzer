@@ -17,6 +17,7 @@
 
 	let data: GymBestTimes[] = [];
 	let error: string | null = null;
+	let loading = false;
 	let selectedDows = new Set([0, 1, 2, 3, 4, 5, 6]);
 	let hourFrom = 0;
 	let hourTo = 23;
@@ -31,32 +32,32 @@
 		selectedDows = new Set(selectedDows);
 	}
 
-	$: filteredData = data.map((gym) => ({
-		...gym,
-		best_times: gym.best_times.filter(
-			(s) =>
-				selectedDows.has(s.dow) &&
-				s.hour >= hourFrom &&
-				s.hour <= hourTo &&
-				s.avg_people < maxPeople
-		)
-	}));
-
-	onMount(async () => {
+	async function load() {
+		loading = true;
+		error = null;
 		try {
-			data = await api.getBestTimes();
+			data = await api.getBestTimes({
+				dows: [...selectedDows],
+				hourFrom,
+				hourTo,
+				maxPeople
+			});
 		} catch {
 			error = 'Błąd pobierania rekomendacji';
+		} finally {
+			loading = false;
 		}
-	});
+	}
+
+	$: selectedDows, hourFrom, hourTo, maxPeople, load();
+
+	onMount(load);
 </script>
 
 <div class="wrapper">
 	<h3>Najlepsze godziny</h3>
 	{#if error}
 		<p class="error">{error}</p>
-	{:else if data.length === 0}
-		<p class="muted">Brak wystarczającej ilości danych — wróć po kilku dniach.</p>
 	{:else}
 		<div class="filters">
 			<div class="dow-tabs">
@@ -92,29 +93,35 @@
 				</label>
 			</div>
 		</div>
-		<div class="gyms">
-			{#each filteredData as gym}
-				{#if gym.best_times.length > 0}
-					<div class="gym-block">
-						<div class="gym-name">{gym.gym_name}</div>
-						<ol>
-							{#each gym.best_times as slot}
-								<li>
-									<span class="slot"
-										>{DOW_PL[slot.dow_name] ?? slot.dow_name}, {slot.hour}:00–{slot.hour +
-											1}:00</span
-									>
-									<span class="avg">śr. {slot.avg_people} os.</span>
-								</li>
-							{/each}
-						</ol>
-					</div>
+		{#if loading}
+			<p class="muted">Ładowanie…</p>
+		{:else if data.length === 0}
+			<p class="muted">Brak wystarczającej ilości danych — wróć po kilku dniach.</p>
+		{:else}
+			<div class="gyms">
+				{#each data as gym}
+					{#if gym.best_times.length > 0}
+						<div class="gym-block">
+							<div class="gym-name">{gym.gym_name}</div>
+							<ol>
+								{#each gym.best_times as slot}
+									<li>
+										<span class="slot"
+											>{DOW_PL[slot.dow_name] ?? slot.dow_name}, {slot.hour}:00–{slot.hour +
+												1}:00</span
+										>
+										<span class="avg">śr. {slot.avg_people} os.</span>
+									</li>
+								{/each}
+							</ol>
+						</div>
+					{/if}
+				{/each}
+				{#if data.every((g) => g.best_times.length === 0)}
+					<p class="muted">Brak wyników dla wybranych filtrów.</p>
 				{/if}
-			{/each}
-			{#if filteredData.every((g) => g.best_times.length === 0)}
-				<p class="muted">Brak wyników dla wybranych filtrów.</p>
-			{/if}
-		</div>
+			</div>
+		{/if}
 	{/if}
 </div>
 
