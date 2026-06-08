@@ -61,12 +61,14 @@ export const api = {
 		hourFrom?: number;
 		hourTo?: number;
 		maxPeople?: number;
+		limit?: number;
 	}) => {
 		const p = new URLSearchParams();
 		(params?.dows ?? [0, 1, 2, 3, 4, 5, 6]).forEach((d) => p.append('dows', String(d)));
 		p.set('hour_from', String(params?.hourFrom ?? 0));
 		p.set('hour_to', String(params?.hourTo ?? 23));
 		p.set('max_people', String(params?.maxPeople ?? 80));
+		p.set('limit', String(params?.limit ?? 5));
 		return get<GymBestTimes[]>(`/analytics/best-times?${p.toString()}`);
 	},
 };

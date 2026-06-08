@@ -22,6 +22,7 @@
 	let hourFrom = 0;
 	let hourTo = 23;
 	let maxPeople = 80;
+	let limit = 5;
 
 	function toggleDow(d: number) {
 		if (selectedDows.has(d)) {
@@ -40,7 +41,8 @@
 				dows: [...selectedDows],
 				hourFrom,
 				hourTo,
-				maxPeople
+				maxPeople,
+				limit
 			});
 		} catch {
 			error = 'Błąd pobierania rekomendacji';
@@ -48,8 +50,6 @@
 			loading = false;
 		}
 	}
-
-	$: selectedDows, hourFrom, hourTo, maxPeople, load();
 
 	onMount(load);
 </script>
@@ -91,6 +91,16 @@
 						max="999"
 					/>
 				</label>
+				<label class="max-people">
+					Wyniki
+					<input
+						type="number"
+						bind:value={limit}
+						min="1"
+						max="100"
+					/>
+				</label>
+				<button class="filter-btn" on:click={load}>Filtruj</button>
 			</div>
 		</div>
 		{#if loading}
@@ -210,6 +220,21 @@
 
 	.max-people input:focus {
 		outline: 1px solid var(--color-accent);
+	}
+
+	.filter-btn {
+		background: var(--color-accent);
+		border: none;
+		border-radius: 6px;
+		color: #fff;
+		padding: 0.25rem 0.85rem;
+		font-size: 0.8rem;
+		cursor: pointer;
+		transition: opacity 0.2s;
+	}
+
+	.filter-btn:hover {
+		opacity: 0.85;
 	}
 
 	.gyms {

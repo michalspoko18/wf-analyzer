@@ -14,6 +14,7 @@ async def best_times(
     hour_from: int = Query(default=0, ge=0, le=23),
     hour_to: int = Query(default=23, ge=0, le=23),
     max_people: float = Query(default=80.0, gt=0),
+    limit: int = Query(default=5, ge=1, le=100),
     pool: asyncpg.Pool = Depends(get_pool),
 ):
     """
@@ -37,11 +38,13 @@ async def best_times(
           AND h.hour      <= $3
           AND h.avg_people < $4
         ORDER BY h.gym_id, h.avg_people ASC
+        LIMIT $5
         """,
         dows,
         hour_from,
         hour_to,
         max_people,
+        limit,
     )
 
     result: dict = {}
