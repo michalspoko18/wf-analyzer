@@ -12,8 +12,30 @@
 		Sunday: 'niedziela'
 	};
 
+	const DOW_SHORT = ['Pon', 'Wt', 'Śr', 'Czw', 'Pt', 'Sob', 'Nd'];
+	const HOUR_OPTIONS = Array.from({ length: 24 }, (_, i) => i);
+
 	let data: GymBestTimes[] = [];
 	let error: string | null = null;
+	let selectedDows = new Set([0, 1, 2, 3, 4, 5, 6]);
+	let hourFrom = 0;
+	let hourTo = 23;
+
+	function toggleDow(d: number) {
+		if (selectedDows.has(d)) {
+			if (selectedDows.size > 1) selectedDows.delete(d);
+		} else {
+			selectedDows.add(d);
+		}
+		selectedDows = new Set(selectedDows);
+	}
+
+	$: filteredData = data.map((gym) => ({
+		...gym,
+		best_times: gym.best_times.filter(
+			(s) => selectedDows.has(s.dow) && s.hour >= hourFrom && s.hour <= hourTo
+		)
+	}));
 
 	onMount(async () => {
 		try {
@@ -31,23 +53,53 @@
 	{:else if data.length === 0}
 		<p class="muted">Brak wystarczającej ilości danych — wróć po kilku dniach.</p>
 	{:else}
-		<div class="gyms">
-			{#each data as gym}
-				<div class="gym-block">
-					<div class="gym-name">{gym.gym_name}</div>
-					<ol>
-						{#each gym.best_times as slot}
-							<li>
-								<span class="slot"
-									>{DOW_PL[slot.dow_name] ?? slot.dow_name}, {slot.hour}:00–{slot.hour +
-										1}:00</span
-								>
-								<span class="avg">śr. {slot.avg_people} os.</span>
-							</li>
+		<div class="filters">
+			<div class="dow-tabs">
+				{#each DOW_SHORT as name, i}
+					<button class:active={selectedDows.has(i)} on:click={() => toggleDow(i)}>{name}</button>
+				{/each}
+			</div>
+			<div class="hour-range">
+				<label>
+					Od
+					<select bind:value={hourFrom} on:change={() => { if (hourFrom > hourTo) hourTo = hourFrom; }}>
+						{#each HOUR_OPTIONS as h}
+							<option value={h}>{h}:00</option>
 						{/each}
-					</ol>
-				</div>
+					</select>
+				</label>
+				<label>
+					Do
+					<select bind:value={hourTo} on:change={() => { if (hourTo < hourFrom) hourFrom = hourTo; }}>
+						{#each HOUR_OPTIONS as h}
+							<option value={h}>{h}:00</option>
+						{/each}
+					</select>
+				</label>
+			</div>
+		</div>
+		<div class="gyms">
+			{#each filteredData as gym}
+				{#if gym.best_times.length > 0}
+					<div class="gym-block">
+						<div class="gym-name">{gym.gym_name}</div>
+						<ol>
+							{#each gym.best_times as slot}
+								<li>
+									<span class="slot"
+										>{DOW_PL[slot.dow_name] ?? slot.dow_name}, {slot.hour}:00–{slot.hour +
+											1}:00</span
+									>
+									<span class="avg">śr. {slot.avg_people} os.</span>
+								</li>
+							{/each}
+						</ol>
+					</div>
+				{/if}
 			{/each}
+			{#if filteredData.every((g) => g.best_times.length === 0)}
+				<p class="muted">Brak wyników dla wybranych filtrów.</p>
+			{/if}
 		</div>
 	{/if}
 </div>
@@ -63,6 +115,66 @@
 	h3 {
 		font-size: 1rem;
 		margin-bottom: 1rem;
+	}
+
+	.filters {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 0.75rem;
+		margin-bottom: 1.25rem;
+	}
+
+	.dow-tabs {
+		display: flex;
+		gap: 0.25rem;
+		flex-wrap: wrap;
+	}
+
+	.dow-tabs button {
+		background: none;
+		border: 1px solid var(--color-border);
+		color: var(--color-text-muted);
+		border-radius: 6px;
+		padding: 0.25rem 0.6rem;
+		font-size: 0.8rem;
+		cursor: pointer;
+		transition: all 0.2s;
+	}
+
+	.dow-tabs button.active,
+	.dow-tabs button:hover {
+		background: var(--color-accent);
+		border-color: var(--color-accent);
+		color: #fff;
+	}
+
+	.hour-range {
+		display: flex;
+		align-items: center;
+		gap: 0.75rem;
+		font-size: 0.8rem;
+		color: var(--color-text-muted);
+	}
+
+	.hour-range label {
+		display: flex;
+		align-items: center;
+		gap: 0.35rem;
+	}
+
+	.hour-range select {
+		background: var(--color-surface);
+		border: 1px solid var(--color-border);
+		border-radius: 6px;
+		color: var(--color-text-muted);
+		padding: 0.2rem 0.4rem;
+		font-size: 0.8rem;
+		cursor: pointer;
+	}
+
+	.hour-range select:focus {
+		outline: 1px solid var(--color-accent);
 	}
 
 	.gyms {
