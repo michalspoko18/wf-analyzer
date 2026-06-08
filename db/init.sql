@@ -46,3 +46,20 @@ VALUES
     ('Szczecin, Hanza',               'Wyzwolenia 46'),
     ('Szczecin, Słoneczne Centrum',   'Andrzeja Struga 18')
 ON CONFLICT (name) DO NOTHING;
+
+CREATE TABLE IF NOT EXISTS gym_classes (
+    class_id        INTEGER     NOT NULL,
+    gym_id          INTEGER     NOT NULL REFERENCES gyms (id),
+    name            TEXT        NOT NULL,
+    trainer         TEXT,
+    start_time      TIMESTAMPTZ NOT NULL,
+    end_time        TIMESTAMPTZ NOT NULL,
+    status          TEXT        NOT NULL,
+    capacity        INTEGER,
+    spots_available INTEGER,
+    last_updated_at TIMESTAMPTZ NOT NULL,
+    PRIMARY KEY (class_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_classes_gym_time
+    ON gym_classes (gym_id, start_time);
